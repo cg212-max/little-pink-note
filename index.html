@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Little Pink Note</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; padding: 12px;
+    background: transparent;
+    font-family: ui-rounded, "SF Pro Rounded", "Segoe UI", sans-serif;
+  }
+  .note {
+    width: 100%; min-height: 280px; padding: 19px 20px 14px;
+    background: #fce9e7; border-radius: 13px;
+    box-shadow: 0 5px 16px rgba(115,70,66,.10);
+    display: flex; flex-direction: column; gap: 12px;
+    color: #554442;
+  }
+  .top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .heading {
+    font-size:13px; font-weight:700; letter-spacing:.11em;
+    text-transform:uppercase; color:#9a6d68;
+  }
+  .pin { width:9px; height:9px; border-radius:50%; background:#d69a93; }
+  textarea {
+    display:block; width:100%; flex:1; min-height:195px; resize:vertical;
+    border:0; outline:0; background:transparent; color:#554442;
+    font:15px/1.7 ui-rounded, "SF Pro Rounded", "Segoe UI", sans-serif;
+    padding:2px 0;
+  }
+  textarea::placeholder { color:#b18c87; opacity:1; }
+  .bottom {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding-top:8px; border-top:1px solid rgba(154,109,104,.18);
+  }
+  #status { font-size:11px; color:#a17b76; }
+  button {
+    border:0; border-radius:999px; background:rgba(255,255,255,.48);
+    color:#916863; padding:6px 11px;
+    font:600 11px ui-rounded, "SF Pro Rounded", "Segoe UI", sans-serif;
+    cursor:pointer;
+  }
+  button:hover { background:rgba(255,255,255,.78); }
+</style>
+</head>
+<body>
+<main class="note" aria-label="Pink sticky note">
+  <div class="top">
+    <div class="heading">little note to self</div>
+    <span class="pin" aria-hidden="true"></span>
+  </div>
+  <textarea id="note" aria-label="Your note" placeholder="Jot an idea down..."></textarea>
+  <div class="bottom">
+    <span id="status" aria-live="polite">Your note saves as you type</span>
+    <button id="clear" type="button">Clear note</button>
+  </div>
+</main>
+<script>
+(() => {
+  const field = document.getElementById('note');
+  const status = document.getElementById('status');
+  const key = 'little-pink-note-v1';
+  try { field.value = localStorage.getItem(key) || ''; }
+  catch (_) { status.textContent = 'Autosave unavailable in this embed'; }
+  field.addEventListener('input', () => {
+    try { localStorage.setItem(key, field.value); status.textContent = 'Saved ♡'; }
+    catch (_) { status.textContent = 'Could not save in this browser'; }
+  });
+  document.getElementById('clear').addEventListener('click', () => {
+    field.value = '';
+    try { localStorage.removeItem(key); } catch (_) {}
+    status.textContent = 'Cleared ♡';
+    field.focus();
+  });
+})();
+</script>
+</body>
+</html>
