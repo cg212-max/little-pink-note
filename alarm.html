@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pink Alarm</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; padding: 12px;
+    background: transparent;
+    font-family: ui-rounded, "SF Pro Rounded", "Segoe UI", sans-serif;
+    color: #c14c8a;
+  }
+  .alarm {
+    width: 100%; max-width: 440px; margin: 0 auto; padding: 22px;
+    background: #fce9e7; border-radius: 14px;
+    box-shadow: 0 5px 16px rgba(115,70,66,.10);
+    text-align: center;
+  }
+  .eyebrow {
+    margin: 0 0 7px; font-size: 12px; font-weight: 700;
+    letter-spacing: .13em; text-transform: uppercase; color: #c14c8a;
+  }
+  .clock {
+    font-size: clamp(32px, 9vw, 48px); line-height: 1.15;
+    font-weight: 700; letter-spacing: -.04em; font-variant-numeric: tabular-nums;
+    margin: 5px 0 18px; color: #c14c8a;
+  }
+  label { display:block; font-size:12px; margin-bottom:8px; color:#c14c8a; }
+  input[type="time"] {
+    display:block; width:100%; padding:12px 14px; border-radius:10px;
+    border:1px solid rgba(193,76,138,.28); background:rgba(255,255,255,.55);
+    color:#c14c8a; font:600 20px ui-rounded, "SF Pro Rounded", "Segoe UI", sans-serif;
+    text-align:center; outline:none;
+  }
+  .actions { display:flex; gap:9px; margin-top:13px; }
+  button {
+    flex:1; border:0; border-radius:999px; padding:11px 13px;
+    background:rgba(255,255,255,.62); color:#c14c8a;
+    font:700 12px ui-rounded, "SF Pro Rounded", "Segoe UI", sans-serif;
+    cursor:pointer;
+  }
+  button.primary { background:#c14c8a; color:#fff8fb; }
+  button:disabled { opacity:.45; cursor:default; }
+  .status { min-height:18px; margin:14px 0 0; font-size:12px; color:#c14c8a; }
+  .hint { margin:7px 0 0; font-size:10px; line-height:1.5; color:#a87991; }
+  .ringing { animation:pulse .8s ease-in-out infinite alternate; }
+  @keyframes pulse { from { box-shadow:0 5px 16px rgba(193,76,138,.10); } to { box-shadow:0 0 0 5px rgba(193,76,138,.18), 0 5px 22px rgba(193,76,138,.22); } }
+</style>
+</head>
+<body>
+<main class="alarm" id="alarmCard">
+  <p class="eyebrow">a little pink alarm</p>
+  <div class="clock" id="clock">--:--:--</div>
+  <label for="alarmTime">Set your alarm</label>
+  <input id="alarmTime" type="time" required>
+  <div class="actions">
+    <button class="primary" id="setButton" type="button">Set alarm</button>
+    <button id="cancelButton" type="button" disabled>Cancel</button>
+  </div>
+  <div class="status" id="status" aria-live="polite">Choose a time to get started ♡</div>
+  <div class="actions" id="ringActions" hidden>
+    <button class="primary" id="stopButton" type="button">Stop alarm</button>
+    <button id="snoozeButton" type="button">Snooze 5 min</button>
+  </div>
+  <p class="hint">Keep this page open for the alarm to ring. Your browser may need to stay active, and sound must be enabled.</p>
+</main>
+<script>
+(() => {
+  const clock = document.getElementById('clock');
+  const input = document.getElementById('alarmTime');
+  const status = document.getElementById('status');
+  const card = document.getElementById('alarmCard');
+  const cancel = document.getElementById('cancelButton');
+  const ringActions = document.getElementById('ringActions');
+  let target = null, interval = null, audio = null, toneTimer = null, ringing = false;
+
+  const pad = n => String(n).padStart(2, '0');
+  function updateClock() {
+    const d = new Date();
+    clock.textContent = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    if (target && !ringing && Date.now() >= target) ring();
+  }
+  updateClock();
+  setInterval(updateClock, 250);
+
+  function unlockAudio() {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    if (!audio) audio = new AudioCtx();
+    if (audio.state === 'suspended') audio.resume();
+  }
+  function beep() {
+    if (!audio || audio.state !== 'running') return;
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    osc.type = 'sine'; osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.0001, audio.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.18, audio.currentTime + 0.025);
+    gain.gain.setValueAtTime(0.18, audio.currentTime + 0.22);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.28);
+    osc.connect(gain); gain.connect(audio.destination);
+    osc.start(); osc.stop(audio.currentTime + 0.3);
+  }
+  function stopSound() {
+    if (toneTimer) clearInterval(toneTimer);
+    toneTimer = null;
+  }
+  function ring() {
+    target = null; ringing = true; stopSound();
+    card.classList.add('ringing');
+    status.textContent = 'Time to wake up! ♡';
+    ringActions.hidden = false;
+    cancel.disabled = true;
+    beep(); toneTimer = setInterval(beep, 650);
+    if (navigator.vibrate) navigator.vibrate([250, 150, 250, 150, 500]);
+  }
+  function stopAlarm(message) {
+    stopSound(); ringing = false; card.classList.remove('ringing');
+    ringActions.hidden = true; cancel.disabled = true;
+    if (navigator.vibrate) navigator.vibrate(0);
+    status.textContent = message;
+  }
+  document.getElementById('setButton').addEventListener('click', () => {
+    if (!input.value) { status.textContent = 'Please choose an alarm time ♡'; return; }
+    unlockAudio();
+    const [h, m] = input.value.split(':').map(Number);
+    const now = new Date();
+    const when = new Date(now);
+    when.setHours(h, m, 0, 0);
+    if (when <= now) when.setDate(when.getDate() + 1);
+    target = when.getTime();
+    stopAlarm('Alarm set for ' + input.value + ' ♡');
+    cancel.disabled = false;
+    status.textContent = 'Alarm set for ' + input.value + ' ♡';
+  });
+  cancel.addEventListener('click', () => {
+    target = null; stopAlarm('Alarm cancelled ♡');
+  });
+  document.getElementById('stopButton').addEventListener('click', () => stopAlarm('Good morning! ♡'));
+  document.getElementById('snoozeButton').addEventListener('click', () => {
+    stopAlarm('Snoozing for 5 minutes ♡');
+    target = Date.now() + 5 * 60 * 1000;
+    cancel.disabled = false;
+  });
+})();
+</script>
+</body>
+</html>
