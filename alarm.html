@@ -100,15 +100,21 @@
   }
   function beep() {
     if (!audio || audio.state !== 'running') return;
-    const osc = audio.createOscillator();
-    const gain = audio.createGain();
-    osc.type = 'sine'; osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.0001, audio.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.18, audio.currentTime + 0.025);
-    gain.gain.setValueAtTime(0.18, audio.currentTime + 0.22);
-    gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.28);
-    osc.connect(gain); gain.connect(audio.destination);
-    osc.start(); osc.stop(audio.currentTime + 0.3);
+    // Soft, layered bell chime with a natural fading ring.
+    [ { frequency: 880, volume: 0.10, decay: 0.9 },
+      { frequency: 1320, volume: 0.035, decay: 0.65 },
+      { frequency: 1760, volume: 0.018, decay: 0.42 } ].forEach(partial => {
+      const osc = audio.createOscillator();
+      const gain = audio.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = partial.frequency;
+      gain.gain.setValueAtTime(0.0001, audio.currentTime);
+      gain.gain.exponentialRampToValueAtTime(partial.volume, audio.currentTime + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + partial.decay);
+      osc.connect(gain); gain.connect(audio.destination);
+      osc.start();
+      osc.stop(audio.currentTime + partial.decay + 0.03);
+    });
   }
   function stopSound() {
     if (toneTimer) clearInterval(toneTimer);
@@ -120,7 +126,7 @@
     status.textContent = 'Time to wake up! ♡';
     ringActions.hidden = false;
     cancel.disabled = true;
-    beep(); toneTimer = setInterval(beep, 650);
+    beep(); toneTimer = setInterval(beep, 1150);
     if (navigator.vibrate) navigator.vibrate([250, 150, 250, 150, 500]);
   }
   function stopAlarm(message) {
