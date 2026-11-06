@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stopwatch</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; padding: 12px;
+    background: transparent;
+    font-family: ui-rounded, "SF Pro Rounded", "Segoe UI", sans-serif;
+    color: #c14c8a;
+  }
+  .stopwatch {
+    width: 100%; max-width: 440px; margin: 0 auto; padding: 22px;
+    background: #fce9e7; border-radius: 14px;
+    box-shadow: 0 5px 16px rgba(115,70,66,.10);
+    text-align: center;
+  }
+  .clock {
+    font-size: clamp(38px, 11vw, 54px); line-height: 1.15;
+    font-weight: 700; letter-spacing: -.04em;
+    font-variant-numeric: tabular-nums;
+    margin: 8px 0 18px; color: #c14c8a;
+  }
+  .started-display {
+    display: inline-block; margin: -8px 0 16px; padding: 5px 11px;
+    border-radius: 999px; background: rgba(255,255,255,.58);
+    color: #c14c8a; font-size: 11px; font-weight: 700;
+    letter-spacing: .04em; font-variant-numeric: tabular-nums;
+  }
+  .actions { display:flex; gap:9px; margin-top:13px; }
+  button {
+    flex:1; border:0; border-radius:999px; padding:12px 13px;
+    background:rgba(255,255,255,.62); color:#c14c8a;
+    font:700 13px ui-rounded, "SF Pro Rounded", "Segoe UI", sans-serif;
+    cursor:pointer;
+  }
+  button.primary { background:#c14c8a; color:#fff8fb; }
+  button:disabled { opacity:.45; cursor:default; }
+  .status { min-height:18px; margin:14px 0 0; font-size:12px; color:#c14c8a; }
+</style>
+</head>
+<body>
+<main class="stopwatch">
+  <div class="clock" id="clock" aria-live="off">00:00.00</div>
+  <div class="started-display" id="startedAt">STARTED AT: --:--</div>
+  <div class="actions">
+    <button class="primary" id="startPause" type="button">Start</button>
+    <button id="reset" type="button" disabled>Reset</button>
+  </div>
+  <div class="status" id="status" aria-live="polite">Ready when you are ♡</div>
+</main>
+<script>
+(() => {
+  const clock = document.getElementById('clock');
+  const startedAtDisplay = document.getElementById('startedAt');
+  const startPauseButton = document.getElementById('startPause');
+  const resetButton = document.getElementById('reset');
+  const status = document.getElementById('status');
+
+  let running = false;
+  let startedAt = null;
+  let startTime = null;
+  let elapsedBeforeStart = 0;
+  let ticker = null;
+
+  function formatElapsed(ms) {
+    const centiseconds = Math.floor(ms / 10);
+    const minutes = Math.floor(centiseconds / 6000);
+    const seconds = Math.floor((centiseconds % 6000) / 100);
+    const hundredths = centiseconds % 100;
+    return String(minutes).padStart(2, '0') + ':' +
+      String(seconds).padStart(2, '0') + '.' +
+      String(hundredths).padStart(2, '0');
+  }
+
+  function render() {
+    const elapsed = elapsedBeforeStart + (running ? Date.now() - startTime : 0);
+    clock.textContent = formatElapsed(elapsed);
+  }
+
+  function start() {
+    if (!startedAt) {
+      startedAt = new Date();
+      startedAtDisplay.textContent = 'STARTED AT: ' +
+        startedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+    }
+    startTime = Date.now();
+    running = true;
+    startPauseButton.textContent = 'Pause';
+    resetButton.disabled = false;
+    status.textContent = 'Timing… ♡';
+    ticker = setInterval(render, 10);
+    render();
+  }
+
+  function pause() {
+    elapsedBeforeStart += Date.now() - startTime;
+    running = false;
+    clearInterval(ticker);
+    ticker = null;
+    startPauseButton.textContent = 'Resume';
+    status.textContent = 'Paused ♡';
+    render();
+  }
+
+  startPauseButton.addEventListener('click', () => {
+    if (running) pause();
+    else start();
+  });
+
+  resetButton.addEventListener('click', () => {
+    running = false;
+    clearInterval(ticker);
+    ticker = null;
+    startedAt = null;
+    startTime = null;
+    elapsedBeforeStart = 0;
+    clock.textContent = '00:00.00';
+    startedAtDisplay.textContent = 'STARTED AT: --:--';
+    startPauseButton.textContent = 'Start';
+    resetButton.disabled = true;
+    status.textContent = 'Ready when you are ♡';
+  });
+})();
+</script>
+</body>
+</html>
