@@ -58,7 +58,7 @@
 <body>
 <main class="alarm" id="alarmCard">
   <div class="clock" id="clock">--:--:--</div>
-  <div class="alarm-display" id="alarmDisplay">ALARM: --:--</div>
+  <div class="alarm-display" id="alarmDisplay">SET AT: --:--</div>
   <label for="alarmTime">Set your alarm</label>
   <input id="alarmTime" type="time" required>
   <div class="actions">
@@ -138,19 +138,18 @@
     when.setHours(h, m, 0, 0);
     if (when <= now) when.setDate(when.getDate() + 1);
     target = when.getTime();
-    alarmDisplay.textContent = 'ALARM: ' + when.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    alarmDisplay.textContent = 'SET AT: ' + now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     stopAlarm('Alarm set for ' + input.value + ' ♡');
     cancel.disabled = false;
     status.textContent = 'Alarm set for ' + input.value + ' ♡';
   });
   cancel.addEventListener('click', () => {
-    target = null; alarmDisplay.textContent = 'ALARM: --:--'; stopAlarm('Alarm cancelled ♡');
+    target = null; alarmDisplay.textContent = 'SET AT: --:--'; stopAlarm('Alarm cancelled ♡');
   });
   document.getElementById('stopButton').addEventListener('click', () => stopAlarm('Good morning! ♡'));
   document.getElementById('snoozeButton').addEventListener('click', () => {
     stopAlarm('Snoozing for 5 minutes ♡');
     target = Date.now() + 5 * 60 * 1000;
-    alarmDisplay.textContent = 'ALARM: ' + new Date(target).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     cancel.disabled = false;
   });
 })();
